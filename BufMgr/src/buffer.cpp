@@ -69,9 +69,55 @@ void BufMgr::allocBuf(FrameId & frame)
 }
 
 	
+/*
+* First check whether the page is already in the buffer pool by invoking the lookup() method,
+  which may throw HashNotFoundException when page is not in the buffer pool, on the
+  hashtable to get a frame number. There are two cases to be handled depending on the
+  outcome of the lookup() call:
+    • Case 1: Page is not in the buffer pool. Call allocBuf() to allocate a buffer frame and
+      then call the method file->readPage() to read the page from disk into the buffer pool
+      frame. Next, insert the page into the hashtable. Finally, invoke Set() on the frame to
+      set it up properly. Set() will leave the pinCnt for the page set to 1. Return a pointer
+      to the frame containing the page via the page parameter.
+    • Case 2: Page is in the buffer pool. In this case set the appropriate refbit, increment
+      the pinCnt for the page, and then return a pointer to the frame containing the page
+      via the page parameter
+
+* EDGE CASE if buf is not found in BufDesc table for some reason
+* ALSO does this have no return?????
+*/
+
 void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 {
+  FrameId frame;
+  int entry;
+  // find FrameId
+  for (FrameId i = 0; i < numBufs; i++)
+  {
+       if(bufDescTable[i].valid == true){
+            if(bufDescTable[i].file == file && bufDescTable[i].pageNo == pageNo){
+                frame = bufDescTable[i].frameNo;
+                entry = i;
+            }
+       }
+  }
+  try{
+        //check whether page in buffer pool
+        hashTable->lookup(file, pageNo, frame);
 
+        //if found update refbit
+        bufDescTable[entry].refbit = true;
+        bufDescTable[entry].pinCnt++;
+
+
+    }
+  catch(HashNotFoundException e){
+        allocBuf(frame);
+        file->readPage(pageNo);
+        hashTable->insert(file, pageNo, frame);
+
+
+  }
 }
 
 
