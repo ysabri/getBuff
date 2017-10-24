@@ -123,6 +123,7 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
 
 void BufMgr::unPinPage(File* file, const PageId pageNo, const bool dirty) 
 {
+
 }
 
 void BufMgr::flushFile(const File* file) 
@@ -132,9 +133,13 @@ void BufMgr::flushFile(const File* file)
       if(bufDescTable[i].valid) {
         if(bufDescTable[i].pinCnt==0){
           if(bufDescTable[i].dirty){
+            //BufHashTbl::lookup(const File* file, const PageId pageNo, FrameId &frameNo) 
+            FrameId returned = 0; 
+            hashTable->lookup(file, bufDescTable[i].pageNo, returned);
               //wait for piazza
-              //file->writePage(bufPool[i]);
-              bufDescTable[i].valid = false;
+            //const Page casted = &bufPool[i];//*reinterpret_cast<Page *>(returned);
+            file->writePage(bufPool[i]);
+            bufDescTable[i].valid = false;
           }
         } else {
             throw PagePinnedException("",bufDescTable[i].pageNo, 
@@ -153,6 +158,17 @@ void BufMgr::flushFile(const File* file)
 
 void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page) 
 {
+  Page pg = file->allocatePage();
+  FrameId fr;
+  allocBuf(fr);
+  PageId pId = pg.page_number();
+  //BufHashTbl::insert(const File* file, const PageId pageNo, const FrameId frameNo)
+  hashTable->insert(file, pId, fr);
+  bufDescTable[fr].Set(file, pId);
+  pageNo = pId;
+  page = &pg;
+
+
 }
 
 void BufMgr::disposePage(File* file, const PageId PageNo)
