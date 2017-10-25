@@ -65,7 +65,53 @@ void BufMgr::advanceClock()
 
 void BufMgr::allocBuf(FrameId & frame) 
 {
+for (int i = 0;  i < sizeof(bufDescTable); i++)
+  {
+    advanceClock();
 
+    if(!bufDescTable[clockHand].valid)
+    {
+      // call set on frame
+      frame = clockHand;
+      // use frame
+      return;
+    }
+
+    if(bufDescTable[clockHand].valid && bufDescTable[clockHand].pinCnt == 0 && !bufDescTable[clockHand].dirty)
+    {
+      //set dirty bit
+      //set pin count 1 
+      // call set on frame
+      frame = clockHand;
+      // use frame
+      return;
+    }
+
+    if(bufDescTable[clockHand].valid && bufDescTable[clockHand].pinCnt == 0 && bufDescTable[clockHand].dirty)
+    {
+      // flush page to disk
+      // call set on frame
+      frame = clockHand;
+      // use frame
+      return;
+    }
+
+    if(bufDescTable[clockHand].valid && bufDescTable[clockHand].refbit)
+    {
+      bufDescTable[clockHand].refbit = 0;
+      continue;
+    }
+
+    if(bufDescTable[clockHand].valid && !bufDescTable[clockHand].refbit && bufDescTable[clockHand].pinCnt > 0)
+    {
+      continue;
+    }
+  }
+
+  // if outside the for loop, that means no buf found
+  throw BufferExceededException();
+  frame = clockHand;
+  bufDescTable[clockHand].Clear();
 }
 
 	
@@ -184,7 +230,16 @@ void BufMgr::allocPage(File* file, PageId &pageNo, Page*& page)
 
 void BufMgr::disposePage(File* file, const PageId PageNo)
 {
-    
+ try
+   {
+   FrameID *frame_num;
+   hashTable->lookup(file, pageNo, frame_num);
+   bufDescTable[frame_num].clear();
+   //bd_table[frame_num] = NULL;
+   hashTable->remove(file, pageNo);
+   } catch (HashNotFoundException hnfe) {
+     // no need to do anything
+   }
 }
 
 void BufMgr::printSelf(void) 
