@@ -141,9 +141,11 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
   try{
         //check whether page in buffer pool
         hashTable->lookup(file, pageNo, frame);
-        //if found update refbit
+        //if found update refbit & pincount
         bufDescTable[frame].refbit = true;
         bufDescTable[frame].pinCnt++;
+
+	//allocate page
         page = &bufPool[frame];
         return;
 
@@ -153,6 +155,7 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
         allocBuf(frame);
         file->readPage(pageNo);
         hashTable->insert(file, pageNo, frame);
+        Set(file, pageNo);
         page = &bufPool[frame];
         return;
 
