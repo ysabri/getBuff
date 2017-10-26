@@ -19,7 +19,7 @@ namespace badgerdb {
 BufMgr::BufMgr(std::uint32_t bufs)
 	: numBufs(bufs) {
 	bufDescTable = new BufDesc[bufs];
-
+	//
   for (FrameId i = 0; i < bufs; i++) 
   {
   	bufDescTable[i].frameNo = i;
