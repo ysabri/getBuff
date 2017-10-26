@@ -155,7 +155,7 @@ void BufMgr::readPage(File* file, const PageId pageNo, Page*& page)
         allocBuf(frame);
         file->readPage(pageNo);
         hashTable->insert(file, pageNo, frame);
-        Set(file, pageNo);
+        bufDescTable->Set(file, pageNo);
         page = &bufPool[frame];
         return;
 
@@ -200,6 +200,7 @@ void BufMgr::flushFile(const File* file)
             //const Page casted = &bufPool[i];//*reinterpret_cast<Page *>(returned);
             bufDescTable[i].file->writePage(bufPool[i]);
             bufDescTable[i].valid = false;
+	    bufDescTable[i].dirty = 0;
           }
         } else {
             throw PagePinnedException("",bufDescTable[i].pageNo, 
@@ -235,11 +236,11 @@ void BufMgr::disposePage(File* file, const PageId PageNo)
 {
  try
    {
-   FrameID *frame_num;
-   hashTable->lookup(file, pageNo, frame_num);
-   bufDescTable[frame_num].clear();
+   FrameId frame_num;
+   hashTable->lookup(file, PageNo, frame_num);
+   bufDescTable[frame_num].Clear();
    //bd_table[frame_num] = NULL;
-   hashTable->remove(file, pageNo);
+   hashTable->remove(file, PageNo);
    } catch (HashNotFoundException hnfe) {
      // no need to do anything
    }
