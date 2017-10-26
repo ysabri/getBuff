@@ -198,7 +198,7 @@ void BufMgr::flushFile(const File* file)
             hashTable->lookup(file, bufDescTable[i].pageNo, returned);
               //wait for piazza
             //const Page casted = &bufPool[i];//*reinterpret_cast<Page *>(returned);
-            file->writePage(bufPool[i]);
+            bufDescTable[i].file->writePage(bufPool[i]);
             bufDescTable[i].valid = false;
           }
         } else {
