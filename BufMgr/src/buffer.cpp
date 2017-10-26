@@ -65,13 +65,15 @@ void BufMgr::advanceClock()
 
 void BufMgr::allocBuf(FrameId & frame) 
 {
-for (int i = 0;  i < sizeof(bufDescTable); i++)
+  int found = 0;
+for (FrameId i = 0;  i < sizeof(bufDescTable); i++)
   {
     advanceClock();
 
     if(!bufDescTable[clockHand].valid)
     {
       // call set on frame
+      bufDescTable[clockHand].Clear();
       frame = clockHand;
       // use frame
       return;
@@ -82,6 +84,8 @@ for (int i = 0;  i < sizeof(bufDescTable); i++)
       //set dirty bit
       //set pin count 1 
       // call set on frame
+      hashTable->remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
+      bufDescTable[clockHand].Clear();
       frame = clockHand;
       // use frame
       return;
@@ -91,6 +95,10 @@ for (int i = 0;  i < sizeof(bufDescTable); i++)
     {
       // flush page to disk
       // call set on frame
+      hashTable->remove(bufDescTable[clockHand].file, bufDescTable[clockHand].pageNo);
+      bufDescTable[clockHand].file->writePage(bufPool[clockHand]);
+      bufDescTable[clockHand].dirty= false;
+      bufDescTable[clockHand].Clear();
       frame = clockHand;
       // use frame
       return;
